@@ -6,4 +6,7 @@ Bresenham - Standard-ish implementation of the bresenham 3d line algo, for roblo
 	Does not offset for different sized blocks
 	
 building_gen - uses Bresenham3d to generate buildings. You could also say it generates cubes and pyramids.
+
 DrawSphere - Draw spheres using blocks
+
+draw_circle - Base for DrawSphere. Does not allow rotation of circle.
