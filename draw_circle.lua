@@ -4,7 +4,7 @@ function plotCircle(xc, yc, zc, r, density)
 	local coordinates = {}
 
 	local M = density
-	local N = density -- how many points top to bottom
+	local N = density * 2 -- how many points top to bottom
 	
 	local m = 1
 	local n = 1
@@ -28,10 +28,13 @@ function plotCircle(xc, yc, zc, r, density)
 	return coordinates
 end
 
-function drawCircle(xc, yc, zc, radius)
+function drawCircle(xc, yc, zc, radius, density)
 	
-	local circleCoordinates = plotCircle(xc, yc, zc, radius)
-	-- draw initial 0,r point
+	local model = Instance.new("Model")
+	model.Name = "circle"
+	model.Parent = workspace
+
+	local circleCoordinates = plotCircle(xc, yc, zc, radius, density)
 	
 	local part = Instance.new("Part")
 	part.Size = Vector3.new(1, 1, 1)
@@ -40,15 +43,14 @@ function drawCircle(xc, yc, zc, radius)
 		local thisPart = part:Clone()
 		
 		thisPart.Position = Vector3.new(coordinate[1], coordinate[2], coordinate[3])
-		--print(thisPart.Position)
 		thisPart.Anchored = true
-		thisPart.Parent = workspace
+		thisPart.Parent = model
 	end	
 end
 
---drawCircle(10,0,0,5)
---drawCircle(0,10,0,5)
---drawCircle(0,0,10,5)
+drawCircle(10,0,0,5, 10)
+drawCircle(0,10,0,5, 5)
+drawCircle(0,0,10,5, 10)
 
---drawCircle(5, 5, -10, 10)
-drawCircle(0, 10, 0, 20)
+drawCircle(5, 5, -10, 10, 10)
+drawCircle(0, 10, 0, 20, 10)
