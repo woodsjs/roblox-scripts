@@ -1,3 +1,5 @@
+-- add in straight buildings
+
 -- inputs - origin (x1, y1, z1), destination (x2, y2, z2)
 -- added l, h, w of the part to adjust the line for block size
 
@@ -259,19 +261,24 @@ function cubeIt(x, y, z, l, h, w, walls, model)
 end
 
 -- hard coded, ick. Need to update to take in a numFloors param
-function skyscraper(x, y, z, l, h, w, walls, numFloors, model)
+function skyscraper(x, y, z, l, h, w, walls, numFloors, model, straight)
 	-- need to check floors, they can be +1 the highest of l or w, because numbers
 	--if ( not walls ) then
-		for i=0, numFloors-1 do
-			cubeIt(x+(i*2), y+(h*i), z+(i*2), l-i, h, w-i, walls, model)
-		end	
+	for i=0, numFloors-1 do
+		-- we need to NOT adjust the x, z, len or width if we want a straight building
+		local attenuateBy = straight and 0 or i
+		cubeIt(x+(attenuateBy*2), y+(h*i), z+(attenuateBy*2), l-attenuateBy, h, w-attenuateBy, walls, model)
+	end	
 end
 
 local skmodel = getModel('building', workspace)
-skyscraper(0,0,0,5,10,5, true, 6, skmodel)
+skyscraper(30,0,50,5,10,5, true, 6, skmodel, true)
 
 local skmodel = getModel('building', workspace)
-skyscraper(30, 0, 0, 10, 6, 6, false, 7, skmodel)
+skyscraper(0,0,50,5,10,10, false, 2, skmodel, true)
+
+local skmodel = getModel('building', workspace)
+skyscraper(30, 0, 0, 10, 6, 6, false, 7, skmodel, false)
 --skyscraper(-70, 0, -100, 15, 15, 20, true, 16)
 
 --local skmodel = getModel('building', workspace)
