@@ -20,13 +20,13 @@ function Bresenham3D(x1, y1, z1, x2, y2, z2, l, h, w)
 	else 
 		xs = -1
 	end
-		
+	
 	if (y2 > y1) then
 		ys = 1
 	else
 		ys = -1
 	end
-		
+	
 	if (z2 > z1) then 
 		zs = 1
 	else 
@@ -57,7 +57,7 @@ function Bresenham3D(x1, y1, z1, x2, y2, z2, l, h, w)
 			table.insert(ListOfPoints, {xVal, y1, z1})
 			i = i + 1
 		end
-	-- if y is the largest number, so the dominant direction
+		-- if y is the largest number, so the dominant direction
 	elseif (dy >= dx and dy >= dz) then 
 		p1 = 2 * dx - dy 
 		p2 = 2 * dz - dy 
@@ -79,7 +79,7 @@ function Bresenham3D(x1, y1, z1, x2, y2, z2, l, h, w)
 			table.insert( ListOfPoints, {x1, yVal, z1}) 
 			i = i + 1
 		end
-	-- if z is the largest number, so the dominant direction
+		-- if z is the largest number, so the dominant direction
 	else
 		p1 = 2 * dy - dz 
 		p2 = 2 * dx - dz 
@@ -102,7 +102,7 @@ function Bresenham3D(x1, y1, z1, x2, y2, z2, l, h, w)
 			i = i + 1
 		end
 	end
-		
+	
 	return ListOfPoints 
 end
 
@@ -138,7 +138,7 @@ local function fillFloor(x, y, z, l, h, w,model)
 	floorFill:MakeJoints()
 end
 
-	
+
 -- connect the squares. 
 -- We only need this when we don't have walls
 local function drawFloorSupports(x, ys, ye ,z, model)	
@@ -159,9 +159,33 @@ local function drawWall(x, y, z, l, h, w, part, model)
 	if part.Orientation.y == 90 then
 		sizeX, sizeZ = sizeZ, sizeX
 	end
-
+	
 	local ListOfPoints = Bresenham3D(x, y, z, l, h, w, sizeX, sizeY, sizeZ)
 	drawLine(ListOfPoints, part, model)	
+end
+
+function wallBuilder(x,y,z,l,h,w,part,wall, wallNumber)
+	
+	if wallNumber == 1 then
+		for i = y, y+h, part.Size.y do
+			-- if our x is even, only draw a wall every 2 blocks
+			drawWall(x, i, z-1, x+l, i, z-1, part, wall)
+			--drawWall(x, i, z-1, x+l, i, z-1, part, wall)
+		end
+	elseif wallNumber == 2 then
+		for i = y, y+h, part.Size.y do			
+			drawWall(x, i, z+(w*part.Size.x)+1, x+l, i, z+(w*part.Size.x)+1, part, wall)
+		end
+	elseif wallNumber == 3 then
+		for i = y, y+h, part.Size.y do			
+			drawWall(x-1, i, z, x-1, i, z+w, part, wall)
+		end
+	elseif wallNumber == 4 then
+		for i = y, y+h, part.Size.y do	
+			drawWall(x+(l*part.Size.x)+1, i, z, x+(l*part.Size.x)+1, i, z+w, part, wall)
+		end		
+	end
+	
 end
 
 -- x,y,z are coordinates
@@ -170,55 +194,137 @@ end
 -- l will always be that, regardless of wall
 -- walls is binary - are there walls filled in or not filled in
 -- model is the model we want created under workspace as the base model
-function cubeIt(x, y, z, l, h, w, walls, model)
+function cubeIt(x, y, z, l, h, w, walls, model, hasWindows)
 	-- TODO: want to pass in the part, so caller can decide what part they want to use
 	-- draws the square and fills it in
 	local function drawSquare(x, y, z, l, h, w, model)
 		local basePart = Instance.new("Part")
 		local part = basePart:Clone()
-
+		part.Rotation = Vector3.new(0, 0, 0)
+		
 		if(walls) then
-			--for i = y, h*2, part.Size.y do	
+			-- wall 1
+			local wallNumber=1
 			local wall = getModel('wall', model)
-			part.Rotation = Vector3.new(0, 0, 0)
-			for i = y, y+h, part.Size.y do
-				drawWall(x, i, z-1, x+l, i, z-1, part, wall)
-			end
-			wall:MakeJoints()
 			
-			local wall = getModel('wall', model)
-			for i = y, y+h, part.Size.y do			
-				drawWall(x, i, z+(w*part.Size.x)+1, x+l, i, z+(w*part.Size.x)+1, part, wall)
+			if hasWindows then
+				for wallNumber = 1, 2 do
+					-- we sub l with len of 2 or 3
+					local isEven = math.fmod(l, 2) == 0
+					-- draw a row so we're not on the ground
+					local drawWallWidth = wallNumber == 1 and z-1 or z+(w*part.Size.x)+1
+					drawWall(x, y, drawWallWidth, x+l, y, drawWallWidth, part, wall)
+					
+					--loop thought this level of wall, and put something every dos
+					local len = isEven and l or l-1
+					local w = wallNumber == 1 and 0 or w
+					for i = 0, len do
+						-- we don't need offset if we're on an even number length
+						local offset = isEven and 0 or part.Size.z
+						local thisX = x+(i*part.Size.x)+ offset --(part.Size.z)
+						
+						if i == 0 then
+							-- bottom ledge
+							wallBuilder(thisX,y,z,0,h,w,part,wall,wallNumber)
+						elseif math.fmod(i, 2) == 1 then
+							-- window
+							local part = Instance.new("Part")
+							part.Material = "Glass"
+							part.Transparency = 0.5
+							wallBuilder(thisX,y+part.Size.y,z,0,h-part.Size.y,w,part,wall,wallNumber)
+						else
+							-- non windowed area
+							wallBuilder(thisX,y,z,0,h,w,part,wall,wallNumber)
+						end
+					end
+					-- top ledge
+					drawWall(x, y+h, drawWallWidth, x+l, 0, drawWallWidth, part, wall)
+				end
+			else
+				-- no windows
+				wallBuilder(x,y,z,l,h,z,part,wall,wallNumber)
 			end
+			
 			wall:MakeJoints()
+			--end wall 1 and 2
 			
 			part.Rotation = Vector3.new(0,90,0)
+			
+			-- wall 3 and 4
+			local wallNumber=3
 			local wall = getModel('wall', model)
-			for i = y, y+h, part.Size.y do			
-				drawWall(x-1, i, z, x-1, i, z+w, part, wall)
+			
+			if hasWindows then
+				for wallNumber = 3, 4 do
+					-- we sub l with len of 2 or 3
+					-- compared to above, we have to swap out len and x values with width and z values
+					local isEven = math.fmod(w, 2) == 0
+					
+					-- draw a row so we're not on the ground
+					--drawWall(x, y, z-1, x+l, y, z-1, part, wall)
+					
+					--loop thought this level of wall, and put something every dos
+					local len = isEven and w or w-0.5
+					local l = wallNumber == 3 and 0 or l
+					
+					for i = 0, len do
+						-- we don't need offset if we're on an even number length
+						local offset = isEven and 0 or part.Size.x/2
+						local thisZ = z+(i*part.Size.x)+ offset --(part.Size.z)
+						
+						if i == 0 then
+							-- first column
+							wallBuilder(x,y,thisZ,l,h,0,part,wall,wallNumber)
+						elseif math.fmod(i, 2) == 1 then
+							-- window
+							local part = Instance.new("Part")
+							part.Material = "Glass"
+							part.Transparency = 0.5
+							part.Rotation = Vector3.new(0,90,0)
+							wallBuilder(x,y+part.Size.y,thisZ,l,h-part.Size.y,0,part,wall,wallNumber)
+						else
+							-- non windowed area
+							wallBuilder(x,y,thisZ,l,h,0,part,wall,wallNumber)
+						end
+					end
+					-- top ledge
+					--drawWall(x, y+h, z-1, x+l, 0, z-1, part, wall)
+				end
+
+				
+			else
+				-- no windows
+				wallBuilder(x,y,z,l,h,z,part,wall,wallNumber)
 			end
+			
+			--wall:MakeJoints()
+			--end wall 2
+			
+			--part.Rotation = Vector3.new(0,90,0)
+			--local wall = getModel('wall', model)
+			--wallBuilder(x,y,z,l,h,w,part,wall,3)
+			
 			wall:MakeJoints()
 			
-			local wall = getModel('wall', model)
-			for i = y, y+h, part.Size.y do	
-				drawWall(x+(l*part.Size.x)+1, i, z, x+(l*part.Size.x)+1, i, z+w, part, wall)
-			end		
-			wall:MakeJoints()	
+			--local wall = getModel('wall', model)
+			--wallBuilder(x,y,z,l,h,w,part,wall,4)
+			
+			--wall:MakeJoints()	
 		else
 			part.Rotation = Vector3.new(0, 0, 0)
 			local wall = getModel('base', model)
 			drawWall(x, y, z-1, x+l, y, z-1, part, wall)
 			wall:MakeJoints()
-				
+			
 			local wall = getModel('base', model)
 			drawWall(x, y, z+(w*part.Size.x)+1, x+l, y, z+(w*part.Size.x)+1, part, wall)
 			wall:MakeJoints()
-				
+			
 			local wall = getModel('base', model)
 			part.Rotation = Vector3.new(0,90,0)
 			drawWall(x-1, y, z, x-1, y, z+w, part, wall)
 			wall:MakeJoints()
-				
+			
 			local wall = getModel('base', model)
 			drawWall(x+(l*part.Size.x)+1, y, z, x+(l*part.Size.x)+1, y, z+w, part, wall)
 			wall:MakeJoints()
@@ -240,7 +346,7 @@ function cubeIt(x, y, z, l, h, w, walls, model)
 	local ceiling = getModel('ceiling', level)
 	fillFloor(x, y + h, z, l, h, w, ceiling)
 	ceiling:MakeJoints()
-
+	
 	if ( not walls ) then
 		local support = getModel('support', level)
 		drawFloorSupports(x-1, y, y + h, z-1,  support)
@@ -261,41 +367,21 @@ function cubeIt(x, y, z, l, h, w, walls, model)
 end
 
 -- hard coded, ick. Need to update to take in a numFloors param
-function skyscraper(x, y, z, l, h, w, walls, numFloors, model, straight)
+function skyscraper(x, y, z, l, h, w, walls, numFloors, model, straight, hasWindows)
 	-- need to check floors, they can be +1 the highest of l or w, because numbers
 	--if ( not walls ) then
 	for i=0, numFloors-1 do
 		-- we need to NOT adjust the x, z, len or width if we want a straight building
 		local attenuateBy = straight and 0 or i
-		cubeIt(x+(attenuateBy*2), y+(h*i), z+(attenuateBy*2), l-attenuateBy, h, w-attenuateBy, walls, model)
+		cubeIt(x+(attenuateBy*2), y+(h*i), z+(attenuateBy*2), l-attenuateBy, h, w-attenuateBy, walls, model, hasWindows)
 	end	
 end
 
 local skmodel = getModel('building', workspace)
-skyscraper(30,0,50,5,10,5, true, 6, skmodel, true)
+skyscraper(40,0,50,15,15,15, true, 15, skmodel, false, true)
 
 local skmodel = getModel('building', workspace)
-skyscraper(0,0,50,5,10,10, false, 2, skmodel, true)
+skyscraper(0,0,50,6,11,10, true, 2, skmodel, true, true)
 
-local skmodel = getModel('building', workspace)
-skyscraper(30, 0, 0, 10, 6, 6, false, 7, skmodel, false)
---skyscraper(-70, 0, -100, 15, 15, 20, true, 16)
-
---local skmodel = getModel('building', workspace)
---cubeIt(20, 0, 30, 10, 20, 12, true, skmodel)
-
-local skmodel = getModel('building', workspace)
-cubeIt(-50, 0, 30, 5, 10, 15, false, skmodel)
-
-local skmodel = getModel('building', workspace)
-cubeIt(-50, 0, 30, 5, 10, 15, false, skmodel)
-
-for i=1, 10 do
-	local model = getModel('building', workspace)
-	cubeIt(0, 0, (i*-25)+20, 5, 10, 5, true, model)
-end
-
-for i=1, 10 do
-	local model = getModel('building', workspace)
-	cubeIt(100, 0, (i*-25)+20, 5, 10, 5, false, model)
-end
+local model = getModel('building', workspace)
+cubeIt(0, 0, 0, 10, 10, 6, true, model, true)
