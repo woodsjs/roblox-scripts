@@ -188,6 +188,18 @@ function wallBuilder(x,y,z,l,h,w,part,wall, wallNumber)
 	
 end
 
+function getGlassPart(wallNumber)
+	local part = Instance.new("Part")
+	part.Material = "Glass"
+	part.Transparency = 0.5
+
+	if (wallNumber >= 3) then
+		part.Rotation = Vector3.new(0,90,0)
+	end
+
+	return part
+end
+
 -- x,y,z are coordinates
 -- l, h, w are how many blocks large the cube is, so if you use a block larger/smaller than standard
 -- it SHOULD still work, but might not
@@ -203,113 +215,80 @@ function cubeIt(x, y, z, l, h, w, walls, model, hasWindows)
 		part.Rotation = Vector3.new(0, 0, 0)
 		
 		if(walls) then
-			-- wall 1
-			local wallNumber=1
-			local wall = getModel('wall', model)
-			
-			if hasWindows then
-				for wallNumber = 1, 2 do
-					-- we sub l with len of 2 or 3
-					local isEven = math.fmod(l, 2) == 0
-					-- draw a row so we're not on the ground
-					local drawWallWidth = wallNumber == 1 and z-1 or z+(w*part.Size.x)+1
-					drawWall(x, y, drawWallWidth, x+l, y, drawWallWidth, part, wall)
-					
-					--loop thought this level of wall, and put something every dos
-					local len = isEven and l or l-1
-					local w = wallNumber == 1 and 0 or w
-					for i = 0, len do
-						-- we don't need offset if we're on an even number length
-						local offset = isEven and 0 or part.Size.z
-						local thisX = x+(i*part.Size.x)+ offset --(part.Size.z)
-						
-						if i == 0 then
-							-- bottom ledge
-							wallBuilder(thisX,y,z,0,h,w,part,wall,wallNumber)
-						elseif math.fmod(i, 2) == 1 then
-							-- window
-							local part = Instance.new("Part")
-							part.Material = "Glass"
-							part.Transparency = 0.5
-							wallBuilder(thisX,y+part.Size.y,z,0,h-part.Size.y,w,part,wall,wallNumber)
-						else
-							-- non windowed area
-							wallBuilder(thisX,y,z,0,h,w,part,wall,wallNumber)
-						end
-					end
-					-- top ledge
-					drawWall(x, y+h, drawWallWidth, x+l, 0, drawWallWidth, part, wall)
-				end
-			else
-				-- no windows
-				wallBuilder(x,y,z,l,h,z,part,wall,wallNumber)
-			end
-			
-			wall:MakeJoints()
-			--end wall 1 and 2
-			
-			part.Rotation = Vector3.new(0,90,0)
-			
-			-- wall 3 and 4
-			local wallNumber=3
-			local wall = getModel('wall', model)
-			
-			if hasWindows then
-				for wallNumber = 3, 4 do
-					-- we sub l with len of 2 or 3
-					-- compared to above, we have to swap out len and x values with width and z values
-					local isEven = math.fmod(w, 2) == 0
-					
-					-- draw a row so we're not on the ground
-					--drawWall(x, y, z-1, x+l, y, z-1, part, wall)
-					
-					--loop thought this level of wall, and put something every dos
-					local len = isEven and w or w-0.5
-					local l = wallNumber == 3 and 0 or l
-					
-					for i = 0, len do
-						-- we don't need offset if we're on an even number length
-						local offset = isEven and 0 or part.Size.x/2
-						local thisZ = z+(i*part.Size.x)+ offset --(part.Size.z)
-						
-						if i == 0 then
-							-- first column
-							wallBuilder(x,y,thisZ,l,h,0,part,wall,wallNumber)
-						elseif math.fmod(i, 2) == 1 then
-							-- window
-							local part = Instance.new("Part")
-							part.Material = "Glass"
-							part.Transparency = 0.5
-							part.Rotation = Vector3.new(0,90,0)
-							wallBuilder(x,y+part.Size.y,thisZ,l,h-part.Size.y,0,part,wall,wallNumber)
-						else
-							-- non windowed area
-							wallBuilder(x,y,thisZ,l,h,0,part,wall,wallNumber)
-						end
-					end
-					-- top ledge
-					--drawWall(x, y+h, z-1, x+l, 0, z-1, part, wall)
-				end
+            local wallNumber
+            
+			for wallNumber = 1, 4 do
+				local wall = getModel('wall', model)
 
-				
-			else
-				-- no windows
-				wallBuilder(x,y,z,l,h,z,part,wall,wallNumber)
-			end
-			
-			--wall:MakeJoints()
-			--end wall 2
-			
-			--part.Rotation = Vector3.new(0,90,0)
-			--local wall = getModel('wall', model)
-			--wallBuilder(x,y,z,l,h,w,part,wall,3)
-			
-			wall:MakeJoints()
-			
-			--local wall = getModel('wall', model)
-			--wallBuilder(x,y,z,l,h,w,part,wall,4)
-			
-			--wall:MakeJoints()	
+				if hasWindows then
+					-- our parts need to be rotated on Y when we build our walls that
+					-- move along the z axis so the walls are a consistant width
+					if (wallNumber >= 3) then
+                        part.Rotation = Vector3.new(0,90,0)
+                    end
+
+					-- We have to set odd block sized walls with an offset on the length
+					-- otherwise there will be a blank spot at the beginning or end of the wall
+					-- for even sized walls, we don't need any offset
+					-- I'm sure there's a better way to fix this, as the offset is different
+					-- for the walls moving in different directions
+					local mainDirection = (wallNumber <= 2) and l or w
+					local isEven = math.fmod(mainDirection, 2) == 0
+					local offsetSize = (wallNumber <= 2) and l-1 or w-0.5
+                    local len = isEven and mainDirection or offsetSize
+					local width,length = 0,0
+					
+                    -- draw a row so we're not on the ground
+                    --drawWall(x, y, z-1, x+l, y, z-1, part, wall)
+                    -- local drawWallWidth = wallNumber == 1 and z-1 or z+(w*part.Size.x)+1
+                    -- drawWall(x, y, drawWallWidth, x+l, y, drawWallWidth, part, wall)
+                            
+					-- this will move the second wall out to either the length or width of the building
+                    if (wallNumber <= 2) then
+                        width = (wallNumber == 1) and 0 or w
+                    else
+                        length = (wallNumber == 3) and 0 or l
+                    end
+                    
+                    for i = 0, len do
+						-- we don't need offset if we're on an even number length
+						-- looking above, this might be the source of our offset difference above
+						-- between l-1 and w-0.5
+                        local offsetSize = (wallNumber <= 2) and part.Size.z or part.Size.x/2
+                        local offset = isEven and 0 or offsetSize
+                        
+                        local thisX, thisZ
+
+                        if (wallNumber <= 2) then
+                            thisX = x+(i*part.Size.x)+ offset
+                            thisZ = z
+                        else
+                            thisZ = z+(i*part.Size.x)+ offset
+                            thisX = x
+                        end
+                        
+                        if i == 0 then
+							-- first column
+                            wallBuilder(thisX,y,thisZ,length,h,width,part,wall,wallNumber)
+                        elseif math.fmod(i, 2) == 1 then
+                            -- windowed wall in the even spaces
+                            local part = getGlassPart(wallNumber)
+                            wallBuilder(thisX,y+part.Size.y,thisZ,length,h-part.Size.y,width,part,wall,wallNumber)
+                        else
+                            -- non windowed area in the odd spaces after 0
+                            wallBuilder(thisX,y,thisZ,length,h,width,part,wall,wallNumber)
+                        end
+                    end
+                        -- top ledge
+                        --drawWall(x, y+h, z-1, x+l, 0, z-1, part, wall)
+                    
+                else
+                    -- no windows
+                    wallBuilder(x,y,z,l,h,z,part,wall,wallNumber)
+				end
+				wall:MakeJoints()
+
+		    end
 		else
 			part.Rotation = Vector3.new(0, 0, 0)
 			local wall = getModel('base', model)
@@ -385,3 +364,13 @@ skyscraper(0,0,50,6,11,10, true, 2, skmodel, true, true)
 
 local model = getModel('building', workspace)
 cubeIt(0, 0, 0, 10, 10, 6, true, model, true)
+
+-- no walls test
+local skmodel = getModel('building', workspace)
+skyscraper(40,0,-100,15,15,15, false, 15, skmodel, false, true)
+
+local skmodel = getModel('building', workspace)
+skyscraper(0,0,-100,6,11,10, false, 2, skmodel, true, true)
+
+local model = getModel('building', workspace)
+cubeIt(-30, 0, -100, 10, 10, 6, false, model, true)
