@@ -204,22 +204,19 @@ function cubeIt(x, y, z, l, h, w, walls, model, hasWindows)
 		
 		if(walls) then
             local wallNumber
-			local wall = getModel('wall', model)
             
 			for wallNumber = 1, 4 do
-				print('wall numer ' .. wallNumber)
+				local wall = getModel('wall', model)
+
 				if hasWindows then
 					if (wallNumber >= 3) then
-						print('rotate part')
                         part.Rotation = Vector3.new(0,90,0)
                     end
 
                     -- we sub l with len of 2 or 3
                     -- compared to above, we have to swap out len and x values with width and z values
 					local mainDirection = (wallNumber <= 2) and l or w
-					print('main direction l or w ' .. tostring(mainDirection))
                     local isEven = math.fmod(mainDirection, 2) == 0
-                    print('is even ' .. tostring(isEven))
                     -- draw a row so we're not on the ground
                     --drawWall(x, y, z-1, x+l, y, z-1, part, wall)
                     -- local drawWallWidth = wallNumber == 1 and z-1 or z+(w*part.Size.x)+1
@@ -227,14 +224,12 @@ function cubeIt(x, y, z, l, h, w, walls, model, hasWindows)
                             
                     --loop thought this level of wall, and put something every dos
 					local offsetSize = (wallNumber <= 2) and l-1 or w-0.5
-					print('offset size ' .. tostring(offsetSize))
                     local len = isEven and mainDirection or offsetSize
-                    print('len ' .. len)
-                    local w,l = 0,0
+                    local width,length = 0,0
                     if (wallNumber <= 2) then
-                        w = wallNumber == 1 and 0 or w
+                        width = (wallNumber == 1) and 0 or w
                     else
-                        l = wallNumber == 3 and 0 or l
+                        length = (wallNumber == 3) and 0 or l
                     end
                     
                     for i = 0, len do
@@ -254,7 +249,7 @@ function cubeIt(x, y, z, l, h, w, walls, model, hasWindows)
                         
                         if i == 0 then
 							-- first column
-                            wallBuilder(thisX,y,thisZ,l,h,w,part,wall,wallNumber)
+                            wallBuilder(thisX,y,thisZ,length,h,width,part,wall,wallNumber)
                         elseif math.fmod(i, 2) == 1 then
                             -- windowed wall in the even spaces
                             local part = Instance.new("Part")
@@ -265,10 +260,10 @@ function cubeIt(x, y, z, l, h, w, walls, model, hasWindows)
                                 part.Rotation = Vector3.new(0,90,0)
                             end
 
-                            wallBuilder(thisX,y+part.Size.y,thisZ,l,h-part.Size.y,w,part,wall,wallNumber)
+                            wallBuilder(thisX,y+part.Size.y,thisZ,length,h-part.Size.y,width,part,wall,wallNumber)
                         else
                             -- non windowed area in the odd spaces after 0
-                            wallBuilder(thisX,y,thisZ,l,h,w,part,wall,wallNumber)
+                            wallBuilder(thisX,y,thisZ,length,h,width,part,wall,wallNumber)
                         end
                         end
                         -- top ledge
@@ -277,10 +272,10 @@ function cubeIt(x, y, z, l, h, w, walls, model, hasWindows)
                 else
                     -- no windows
                     wallBuilder(x,y,z,l,h,z,part,wall,wallNumber)
-                end
-		    end
+				end
+				wall:MakeJoints()
 
-            wall:MakeJoints()
+		    end
         else
 			part.Rotation = Vector3.new(0, 0, 0)
 			local wall = getModel('base', model)
