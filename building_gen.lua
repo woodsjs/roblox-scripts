@@ -266,17 +266,14 @@ function cubeIt(x, y, z, l, h, w, walls, model, hasWindows)
                             thisZ = z+(i*part.Size.x)+ offset
                             thisX = x
                         end
-                        
-                        if i == 0 then
-							-- first column
+						
+						if math.fmod(i,2) == 0 then
+							-- first column, as well as even panels
                             wallBuilder(thisX,y,thisZ,length,h,width,part,wall,wallNumber)
-                        elseif math.fmod(i, 2) == 1 then
+                        else
                             -- windowed wall in the even spaces
                             local part = getGlassPart(wallNumber)
                             wallBuilder(thisX,y+part.Size.y,thisZ,length,h-part.Size.y,width,part,wall,wallNumber)
-                        else
-                            -- non windowed area in the odd spaces after 0
-                            wallBuilder(thisX,y,thisZ,length,h,width,part,wall,wallNumber)
                         end
                     end
                         -- top ledge
